@@ -1,0 +1,6 @@
+@ViknCodesTask_HostAddress = http://localhost:5063
+
+GET {{ViknCodesTask_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
