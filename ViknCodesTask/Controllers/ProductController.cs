@@ -20,6 +20,8 @@ namespace ViknCodesTask.Controllers
             _productService = productService;
         }
 
+
+        [Authorize]
         [HttpPost("create")]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductDTO dto)
         {
@@ -53,6 +55,8 @@ namespace ViknCodesTask.Controllers
             return Ok(products);
         }
 
+
+        [Authorize]
         [HttpPut("stock/update")]
         public async Task<IActionResult> UpdateStock([FromBody] UpdateStockDTO dto)
         {
@@ -62,6 +66,9 @@ namespace ViknCodesTask.Controllers
 
             return Ok(result);
         }
+
+
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(Guid id)
         {
@@ -72,6 +79,8 @@ namespace ViknCodesTask.Controllers
             return Ok(result);
         }
 
+
+        [Authorize]
         [HttpPut("update")]
         public async Task<IActionResult> UpdateProduct([FromForm] UpdateProductDTO dto)
         {
