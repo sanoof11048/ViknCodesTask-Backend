@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using ViknCodesTask.Common;
 using ViknCodesTask.Data;
-using ViknCodesTask.DTOs;
 using ViknCodesTask.DTOs.ProductsDTOs;
 using ViknCodesTask.Interface;
 using ViknCodesTask.Models;
+using ViknCodesTask.Models.ProductModels;
 
 namespace ViknCodesTask.Service
 {
@@ -27,9 +27,9 @@ namespace ViknCodesTask.Service
         {
             try
             {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.ProductCode))
+                    return new ApiResponse<Guid>(400, "Invalid product data");
 
-
-                
                 byte[]? imageBytes = null;
                 if (dto.ImageFile != null)
                 {
@@ -58,10 +58,6 @@ namespace ViknCodesTask.Service
                 await _context.SaveChangesAsync();
 
 
-                int totalStock = 0;
-                var productVariants = new List<ProductVariant>();
-                var subVariants = new List<SubVariant>();
-
                 foreach (var variantDto in dto.Variants)
                 {
                     var variant = new ProductVariant
@@ -79,20 +75,13 @@ namespace ViknCodesTask.Service
                         var subVariant = new SubVariant
                         {
                             Id = Guid.NewGuid(),
-                            Value = sub.Value,
-                            Stock = sub.Stock,
+                            Value = sub,
                             ProductVariantId = variant.Id
                         };
-
-                        totalStock += sub.Stock;
                         await _context.VariantOptions.AddAsync(subVariant);
+
                     }
                 }
-
-                await _context.SaveChangesAsync();
-
-                product.TotalStock = totalStock;
-                _context.Products.Update(product);
                 await _context.SaveChangesAsync();
 
                 return new ApiResponse<Guid>(201, "Product created successfully", product.Id);
@@ -110,8 +99,10 @@ namespace ViknCodesTask.Service
             try
             {
                 var products = await _context.Products
-                    .Include(p => p.Variants)
-                        .ThenInclude(v => v.Options).ToListAsync();
+                    .Include(a=>a.Variants).ThenInclude(ab=>ab.Options)
+                    .Include(b=>b.VariantStocks)
+                .AsNoTracking()
+                .ToListAsync();
 
                 var result = _mapper.Map<List<ProductDetailsDTO>>(products);
                 return new ApiResponse<List<ProductDetailsDTO>>(200, "Products fetched", result);
@@ -127,22 +118,20 @@ namespace ViknCodesTask.Service
             try
             {
                 var product = await _context.Products
-                    .Include(p => p.Variants)
-                        .ThenInclude(v => v.Options)
+                    .Include(p => p.Variants).ThenInclude(v => v.Options)
                     .FirstOrDefaultAsync(p => p.Id == id);
 
                 if (product == null)
                 {
-                    return new ApiResponse<ProductDetailsDTO>(404, "Product not found", null, "Found Sme Errors");
+                    return new ApiResponse<ProductDetailsDTO>(404, "Product not found");
                 }
 
                 var dto = _mapper.Map<ProductDetailsDTO>(product);
-                return new ApiResponse<ProductDetailsDTO>(200, "Product fetched",  dto);
+                return new ApiResponse<ProductDetailsDTO>(200, "Product fetched", dto);
             }
             catch (Exception ex)
             {
-                return new ApiResponse<ProductDetailsDTO>(500, "Something went wrong: " + ex.Message, null, ex.Message);
-
+                return new ApiResponse<ProductDetailsDTO>(500, "Something went wrong", null, ex.Message);
             }
         }
 
@@ -151,122 +140,79 @@ namespace ViknCodesTask.Service
         {
             try
             {
-                var option = await _context.VariantOptions.FirstOrDefaultAsync(o => o.Id == dto.SubVariantId);
+                if (string.IsNullOrWhiteSpace(dto.VariantKey))
+                    return new ApiResponse<string>(400, "Variant key required");
 
-                if (option == null)
+                var stock = await _context.ProductStocks
+                .FirstOrDefaultAsync(x => x.VariantKey == dto.VariantKey);
+
+                if (stock == null)
                 {
-                    return new ApiResponse<string>(404, "Sub-variant not found", null, "Found Sme Errors");
-                }
+                    var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == dto.ProductId);
+                    if (product == null)
+                        return new ApiResponse<string>(404, "Product not found");
 
-                var newStock = option.Stock + dto.Quantity;
-
-                if (newStock < 0)
-                {
-                    return new ApiResponse<string>(400, "Cannot reduce stock below zero");
-                }
-
-                option.Stock = newStock;
-                _context.VariantOptions.Update(option);
-
-                var product = await _context.Products
-                    .Include(p => p.Variants)
-                        .ThenInclude(v => v.Options)
-                    .FirstOrDefaultAsync(p => p.Variants.Any(v => v.Options.Any(o => o.Id == dto.SubVariantId)));
-
-                if (product != null)
-                {
-                    product.TotalStock = product.Variants.Sum(v => v.Options.Sum(o => o.Stock));
-                }
-                await _context.SaveChangesAsync();
-
-                var message = dto.Quantity >= 0
-                    ? $"Added {dto.Quantity} units to stock"
-                    : $"Removed {Math.Abs(dto.Quantity)} units from stock";
-
-                return new ApiResponse<string>(200, message);
-            }
-            catch (Exception ex)
-            {
-                return new ApiResponse<string>(500, "Error updating stock: " + ex.Message, null);
-            }
-        }
-
-        public async Task<ApiResponse<Guid>> UpdateProductAsync(UpdateProductDTO dto)
-        {
-            try
-            {
-                var product = await _context.Products
-                    .Include(p => p.Variants)
-                        .ThenInclude(v => v.Options)
-                    .FirstOrDefaultAsync(p => p.Id == dto.Id);
-
-                if (product == null)
-                    return new ApiResponse<Guid>(404, "❌ Product not found");
-
-                if (dto.ImageFile != null)
-                {
-                    string imageUrl = await _cloudinaryService.UploadImage(dto.ImageFile);
-                    product.ProductImage = Encoding.UTF8.GetBytes(imageUrl);
-                }
-
-                product.ProductCode = dto.ProductCode;
-                product.ProductName = dto.ProductName;
-                product.HSNCode = dto.HSNCode;
-                product.IsFavourite = dto.IsFavourite;
-                product.Active = dto.Active;
-
-                // Remove existing variants & options
-                var existingVariants = product.Variants.ToList();
-                foreach (var variant in existingVariants)
-                {
-                    _context.VariantOptions.RemoveRange(variant.Options);
-                }
-                _context.ProductVariants.RemoveRange(existingVariants);
-                await _context.SaveChangesAsync();
-
-                int totalStock = 0;
-
-                // Add new variants
-                foreach (var variantDto in dto.Variants)
-                {
-                    var variant = new ProductVariant
+                    stock = new ProductStock
                     {
                         Id = Guid.NewGuid(),
-                        ProductId = product.Id,
-                        VariantName = variantDto.VariantName
+                        ProductId = _context.Products.FirstOrDefault()?.Id ?? Guid.Empty,
+                        VariantKey = dto.VariantKey,
+                        Stock = 0
                     };
-
-                    await _context.ProductVariants.AddAsync(variant);
-                    await _context.SaveChangesAsync();
-
-                    foreach (var opt in variantDto.Options ?? new())
-                    {
-                        var subVariant = new SubVariant
-                        {
-                            Id = Guid.NewGuid(),
-                            ProductVariantId = variant.Id,
-                            Value = opt.Value,
-                            Stock = opt.Stock
-                        };
-                        totalStock += opt.Stock;
-                        await _context.VariantOptions.AddAsync(subVariant);
-                    }
+                    await _context.ProductStocks.AddAsync(stock);
                 }
+                if (stock.Stock + dto.Delta < 0)
+                    return new ApiResponse<string>(400, "Stock cannot be negative");
 
-                product.TotalStock = totalStock;
-
-                _context.Products.Update(product);
+                stock.Stock += dto.Delta;
                 await _context.SaveChangesAsync();
 
-                return new ApiResponse<Guid>(200, "✅ Product updated successfully", product.Id);
+                return new ApiResponse<string>(200, "Stock updated");
             }
             catch (Exception ex)
             {
-                return new ApiResponse<Guid>(500, "❌ Error updating product", default, ex.Message);
+                return new ApiResponse<string>(500, "Error updating stock", null, ex.Message);
             }
         }
 
+        //public async Task<ApiResponse<Guid>> UpdateProductAsync(UpdateProductDTO dto)
+        //{
+        //    try
+        //    {
+        //        var product = await _context.Products
+        //            .Include(p => p.Variants).ThenInclude(v => v.Options)
+        //            .Include(p => p.VariantCombinations).ThenInclude(vc => vc.SubVariants)
+        //            .FirstOrDefaultAsync(p => p.Id == dto.Id);
 
+        //        if (product == null)
+        //            return new ApiResponse<Guid>(404, "Product not found");
+
+        //        if (dto.ImageFile != null)
+        //        {
+        //            string imageUrl = await _cloudinaryService.UploadImage(dto.ImageFile);
+        //            product.ProductImage = Encoding.UTF8.GetBytes(imageUrl);
+        //        }
+
+        //        product.ProductCode = dto.ProductCode;
+        //        product.ProductName = dto.ProductName;
+        //        product.HSNCode = dto.HSNCode;
+        //        product.IsFavourite = dto.IsFavourite;
+        //        product.Active = dto.Active;
+
+        //        _context.VariantOptions.RemoveRange(product.Variants.SelectMany(v => v.Options));
+        //        _context.ProductVariants.RemoveRange(product.Variants);
+        //        _context.SubVariantCombinations.RemoveRange(product.VariantCombinations.SelectMany(vc => vc.SubVariants));
+        //        _context.VariantCombinations.RemoveRange(product.VariantCombinations);
+        //        await _context.SaveChangesAsync();
+
+        //        return new ApiResponse<Guid>(200,"",product.Id);
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ApiResponse<Guid>(500, "Error updating product", default, ex.Message);
+        //    }
+        //}
 
     }
 }

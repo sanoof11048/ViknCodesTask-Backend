@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using ViknCodesTask.Common;
 
-namespace ViknCodesTask.Models
+namespace ViknCodesTask.Models.ProductModels
 {
     public class Product : BaseEntity
     {
@@ -17,5 +17,6 @@ namespace ViknCodesTask.Models
         public int TotalStock { get; set; }
 
         public ICollection<ProductVariant>? Variants { get; set; }
+        public ICollection<ProductStock>? VariantStocks { get; set; }
     }
 }

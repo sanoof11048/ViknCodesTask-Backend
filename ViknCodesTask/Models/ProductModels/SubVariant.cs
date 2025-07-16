@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ViknCodesTask.Models
+namespace ViknCodesTask.Models.ProductModels
 {
     public class SubVariant
     {
@@ -11,7 +10,6 @@ namespace ViknCodesTask.Models
         public Guid ProductVariantId { get; set; }
         [Required]
         public string? Value { get; set; }
-        public int Stock { get; set; }
         public ProductVariant ProductVariant { get; set; }
     }
 }

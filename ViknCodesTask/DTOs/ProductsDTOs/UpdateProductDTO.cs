@@ -18,7 +18,6 @@ namespace ViknCodesTask.DTOs.ProductsDTOs
         public bool IsFavourite { get; set; }
         public bool Active { get; set; }
 
-        public ICollection<ProductVariantDTO>? Variants { get; set; }
+        public List<ProductVariantDTO>? Variants { get; set; } = new();
     }
-
 }

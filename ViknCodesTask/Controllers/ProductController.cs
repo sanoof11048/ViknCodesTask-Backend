@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ViknCodesTask.Common;
-using ViknCodesTask.DTOs;
 using ViknCodesTask.DTOs.ProductsDTOs;
 using ViknCodesTask.Interface;
 
@@ -21,7 +20,7 @@ namespace ViknCodesTask.Controllers
         }
 
 
-        [Authorize]
+        //[Authorize]
         [HttpPost("create")]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductDTO dto)
         {
@@ -47,7 +46,7 @@ namespace ViknCodesTask.Controllers
             }
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("all")]
         public async Task<IActionResult> GetProducts()
         {
@@ -56,7 +55,7 @@ namespace ViknCodesTask.Controllers
         }
 
 
-        [Authorize]
+        //[Authorize]
         [HttpPut("stock/update")]
         public async Task<IActionResult> UpdateStock([FromBody] UpdateStockDTO dto)
         {
@@ -68,7 +67,7 @@ namespace ViknCodesTask.Controllers
         }
 
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(Guid id)
         {
@@ -80,29 +79,29 @@ namespace ViknCodesTask.Controllers
         }
 
 
-        [Authorize]
-        [HttpPut("update")]
-        public async Task<IActionResult> UpdateProduct([FromForm] UpdateProductDTO dto)
-        {
-            try
-            {
-                if (Request.Form.TryGetValue("Variants", out var variantsJson))
-                {
-                    dto.Variants = JsonConvert.DeserializeObject<List<ProductVariantDTO>>(variantsJson!);
-                }
+        //[Authorize]
+        //[HttpPut("update")]
+        //public async Task<IActionResult> UpdateProduct([FromForm] UpdateProductDTO dto)
+        //{
+        //    try
+        //    {
+        //        if (Request.Form.TryGetValue("Variants", out var variantsJson))
+        //        {
+        //            dto.Variants = JsonConvert.DeserializeObject<List<ProductVariantDTO>>(variantsJson!);
+        //        }
 
-                var result = await _productService.UpdateProductAsync(dto);
+        //        var result = await _productService.UpdateProductAsync(dto);
 
-                if (!result.Success)
-                    return StatusCode(result.StatusCode, result);
+        //        if (!result.Success)
+        //            return StatusCode(result.StatusCode, result);
 
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<Guid>(500, "Error updating product", default, ex.Message));
-            }
-        }
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new ApiResponse<Guid>(500, "Error updating product", default, ex.Message));
+        //    }
+        //}
 
 
     }

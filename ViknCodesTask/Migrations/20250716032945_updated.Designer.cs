@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ViknCodesTask.Data;
 
@@ -11,9 +12,11 @@ using ViknCodesTask.Data;
 namespace ViknCodesTask.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250716032945_updated")]
+    partial class updated
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace ViknCodesTask.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.Product", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.Product", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -67,37 +70,10 @@ namespace ViknCodesTask.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductCode")
-                        .IsUnique();
-
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.ProductStock", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Stock")
-                        .HasColumnType("int");
-
-                    b.Property<string>("VariantKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId", "VariantKey")
-                        .IsUnique();
-
-                    b.ToTable("ProductStocks");
-                });
-
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.ProductVariant", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.ProductVariant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -113,13 +89,12 @@ namespace ViknCodesTask.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId", "VariantName")
-                        .IsUnique();
+                    b.HasIndex("ProductId");
 
                     b.ToTable("ProductVariants");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.SubVariant", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.SubVariant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -130,14 +105,34 @@ namespace ViknCodesTask.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductVariantId", "Value")
-                        .IsUnique();
+                    b.HasIndex("ProductVariantId");
 
                     b.ToTable("VariantOptions");
+                });
+
+            modelBuilder.Entity("ViknCodesTask.Models.SubVariantCombination", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SubVariantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VariantCombinationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubVariantId");
+
+                    b.HasIndex("VariantCombinationId");
+
+                    b.ToTable("SubVariantCombinations");
                 });
 
             modelBuilder.Entity("ViknCodesTask.Models.User", b =>
@@ -179,20 +174,28 @@ namespace ViknCodesTask.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.ProductStock", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.VariantCombination", b =>
                 {
-                    b.HasOne("ViknCodesTask.Models.ProductModels.Product", "Product")
-                        .WithMany("VariantStocks")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Navigation("Product");
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("VariantCombinations");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.ProductVariant", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.ProductVariant", b =>
                 {
-                    b.HasOne("ViknCodesTask.Models.ProductModels.Product", "Product")
+                    b.HasOne("ViknCodesTask.Models.Product", "Product")
                         .WithMany("Variants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -201,9 +204,9 @@ namespace ViknCodesTask.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.SubVariant", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.SubVariant", b =>
                 {
-                    b.HasOne("ViknCodesTask.Models.ProductModels.ProductVariant", "ProductVariant")
+                    b.HasOne("ViknCodesTask.Models.ProductVariant", "ProductVariant")
                         .WithMany("Options")
                         .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -212,16 +215,51 @@ namespace ViknCodesTask.Migrations
                     b.Navigation("ProductVariant");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.Product", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.SubVariantCombination", b =>
                 {
-                    b.Navigation("VariantStocks");
+                    b.HasOne("ViknCodesTask.Models.SubVariant", "SubVariant")
+                        .WithMany()
+                        .HasForeignKey("SubVariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ViknCodesTask.Models.VariantCombination", "VariantCombination")
+                        .WithMany("SubVariants")
+                        .HasForeignKey("VariantCombinationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SubVariant");
+
+                    b.Navigation("VariantCombination");
+                });
+
+            modelBuilder.Entity("ViknCodesTask.Models.VariantCombination", b =>
+                {
+                    b.HasOne("ViknCodesTask.Models.Product", "Product")
+                        .WithMany("VariantCombinations")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("ViknCodesTask.Models.Product", b =>
+                {
+                    b.Navigation("VariantCombinations");
 
                     b.Navigation("Variants");
                 });
 
-            modelBuilder.Entity("ViknCodesTask.Models.ProductModels.ProductVariant", b =>
+            modelBuilder.Entity("ViknCodesTask.Models.ProductVariant", b =>
                 {
                     b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("ViknCodesTask.Models.VariantCombination", b =>
+                {
+                    b.Navigation("SubVariants");
                 });
 #pragma warning restore 612, 618
         }

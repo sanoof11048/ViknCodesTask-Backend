@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using ViknCodesTask.Common;
 using ViknCodesTask.Models;
+using ViknCodesTask.Models.ProductModels;
 
 namespace ViknCodesTask.Data
 {
@@ -17,6 +18,7 @@ namespace ViknCodesTask.Data
         public DbSet<ProductVariant> ProductVariants { get; set; }
         public DbSet<SubVariant> VariantOptions { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<ProductStock> ProductStocks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +33,22 @@ namespace ViknCodesTask.Data
                 .HasOne(sv => sv.ProductVariant)
                 .WithMany(pv => pv.Options)
                 .HasForeignKey(sv => sv.ProductVariantId);
+
+            modelBuilder.Entity<Product>()
+               .HasIndex(p => p.ProductCode)
+               .IsUnique();
+
+            modelBuilder.Entity<ProductVariant>()
+                .HasIndex(v => new { v.ProductId, v.VariantName })
+                .IsUnique();
+
+            modelBuilder.Entity<SubVariant>()
+                .HasIndex(o => new { o.ProductVariantId, o.Value })
+                .IsUnique();
+
+            modelBuilder.Entity<ProductStock>()
+                .HasIndex(s => new { s.ProductId, s.VariantKey })
+                .IsUnique();
 
         }
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

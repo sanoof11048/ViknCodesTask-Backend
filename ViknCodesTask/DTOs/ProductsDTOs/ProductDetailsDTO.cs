@@ -13,6 +13,7 @@ namespace ViknCodesTask.DTOs.ProductsDTOs
         public string HSNCode { get; set; }
         public int TotalStock { get; set; }
 
-        public List<ProductVariantDTO> Variants { get; set; }
+        public List<ProductVariantDTO> Variants { get; set; } = new();
+        public List<ProductStockDTO> VariantStocks { get; set; } = new();
     }
 }

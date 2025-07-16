@@ -12,6 +12,6 @@ namespace ViknCodesTask.DTOs.ProductsDTOs
         public string? HSNCode { get; set; }
         public bool IsFavourite { get; set; }
         public bool Active { get; set; } = true;
-        public List<ProductVariantDTO>? Variants { get; set; }
+        public List<ProductVariantDTO>? Variants { get; set; } = new();
     }
 }
