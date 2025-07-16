@@ -75,13 +75,32 @@ namespace ViknCodesTask.Service
                         var subVariant = new SubVariant
                         {
                             Id = Guid.NewGuid(),
-                            Value = sub,
+                            Value = sub.Value,
                             ProductVariantId = variant.Id
                         };
                         await _context.VariantOptions.AddAsync(subVariant);
 
                     }
                 }
+                if (dto.Combinations != null && dto.Combinations.Any())
+                {
+                    foreach (var combo in dto.Combinations)
+                    {
+                        var key = string.Join(",", combo.Combination.Select(kv => $"{kv.Key}:{kv.Value}"));
+
+                        var stock = new ProductStock
+                        {
+                            Id = Guid.NewGuid(),
+                            ProductId = product.Id,
+                            VariantKey = key,
+                            Stock = combo.Stock
+                        };
+                        await _context.ProductStocks.AddAsync(stock);
+                    }
+
+                    product.TotalStock = dto.Combinations.Sum(c => c.Stock);
+                }
+
                 await _context.SaveChangesAsync();
 
                 return new ApiResponse<Guid>(201, "Product created successfully", product.Id);
@@ -101,7 +120,6 @@ namespace ViknCodesTask.Service
                 var products = await _context.Products
                     .Include(a=>a.Variants).ThenInclude(ab=>ab.Options)
                     .Include(b=>b.VariantStocks)
-                .AsNoTracking()
                 .ToListAsync();
 
                 var result = _mapper.Map<List<ProductDetailsDTO>>(products);

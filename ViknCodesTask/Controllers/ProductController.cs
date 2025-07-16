@@ -31,6 +31,11 @@ namespace ViknCodesTask.Controllers
                     dto.Variants = JsonConvert.DeserializeObject<List<ProductVariantDTO>>(variantsJson!);
                 }
 
+                if (Request.Form.TryGetValue("combinations", out var comboJson))
+                {
+                    dto.Combinations = JsonConvert.DeserializeObject<List<ProductCombinationStockDTO>>(comboJson!);
+                }
+
                 var result = await _productService.CreateProductAsync(dto);
 
                 if (!result.Success)

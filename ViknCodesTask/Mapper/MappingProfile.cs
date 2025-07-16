@@ -17,7 +17,8 @@ namespace ViknCodesTask.Mapper
 
             CreateMap<Product, ProductDetailsDTO>()
                 .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src =>
-                    src.ProductImage != null ? Encoding.UTF8.GetString(src.ProductImage) : null));
+                    src.ProductImage != null ? Encoding.UTF8.GetString(src.ProductImage) : null))
+                    .ForMember(dest => dest.TotalStock, opt => opt.MapFrom(src => src.TotalStock));
 
             // Variants
             CreateMap<ProductVariant, ProductVariantDTO>()
