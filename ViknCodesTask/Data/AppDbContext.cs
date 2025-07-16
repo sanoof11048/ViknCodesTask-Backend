@@ -13,7 +13,6 @@ namespace ViknCodesTask.Data
         {
             _httpContextAccessor = httpContextAccessor;
         }
-
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductVariant> ProductVariants { get; set; }
         public DbSet<SubVariant> VariantOptions { get; set; }
