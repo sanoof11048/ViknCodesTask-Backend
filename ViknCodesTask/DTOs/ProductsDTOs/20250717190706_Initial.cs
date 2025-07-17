@@ -12,6 +12,19 @@ namespace ViknCodesTask.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "ProductCategories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductCategories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Products",
                 columns: table => new
                 {
@@ -53,19 +66,23 @@ namespace ViknCodesTask.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductStocks",
+                name: "ProductCategoryMappings",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    VariantKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Stock = table.Column<int>(type: "int", nullable: false)
+                    CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductStocks", x => x.Id);
+                    table.PrimaryKey("PK_ProductCategoryMappings", x => new { x.CategoryId, x.ProductId });
                     table.ForeignKey(
-                        name: "FK_ProductStocks_Products_ProductId",
+                        name: "FK_ProductCategoryMappings_ProductCategories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "ProductCategories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductCategoryMappings_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
@@ -92,23 +109,54 @@ namespace ViknCodesTask.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "VariantOptions",
+                name: "ProductStocks",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                    MovementType = table.Column<int>(type: "int", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_VariantOptions", x => x.Id);
+                    table.PrimaryKey("PK_ProductStocks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_VariantOptions_ProductVariants_ProductVariantId",
+                        name: "FK_ProductStocks_ProductVariants_ProductVariantId",
                         column: x => x.ProductVariantId,
                         principalTable: "ProductVariants",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "ProductSubVariants",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OptionName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CurrentStock = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductSubVariants", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductSubVariants_ProductVariants_ProductVariantId",
+                        column: x => x.ProductVariantId,
+                        principalTable: "ProductVariants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductCategoryMappings_ProductId",
+                table: "ProductCategoryMappings",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_ProductCode",
@@ -117,21 +165,19 @@ namespace ViknCodesTask.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductStocks_ProductId_VariantKey",
+                name: "IX_ProductStocks_ProductVariantId",
                 table: "ProductStocks",
-                columns: new[] { "ProductId", "VariantKey" },
-                unique: true);
+                column: "ProductVariantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductSubVariants_ProductVariantId",
+                table: "ProductSubVariants",
+                column: "ProductVariantId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductVariants_ProductId_VariantName",
                 table: "ProductVariants",
                 columns: new[] { "ProductId", "VariantName" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VariantOptions_ProductVariantId_Value",
-                table: "VariantOptions",
-                columns: new[] { "ProductVariantId", "Value" },
                 unique: true);
         }
 
@@ -139,13 +185,19 @@ namespace ViknCodesTask.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "ProductCategoryMappings");
+
+            migrationBuilder.DropTable(
                 name: "ProductStocks");
+
+            migrationBuilder.DropTable(
+                name: "ProductSubVariants");
 
             migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
-                name: "VariantOptions");
+                name: "ProductCategories");
 
             migrationBuilder.DropTable(
                 name: "ProductVariants");

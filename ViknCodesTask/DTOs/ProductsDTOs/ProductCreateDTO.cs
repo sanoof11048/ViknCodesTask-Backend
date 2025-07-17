@@ -2,7 +2,7 @@
 
 namespace ViknCodesTask.DTOs.ProductsDTOs
 {
-    public class CreateProductDTO
+    public class ProductCreateDTO
     {
         [Required]
         public string? ProductCode { get; set; }
@@ -12,7 +12,9 @@ namespace ViknCodesTask.DTOs.ProductsDTOs
         public string? HSNCode { get; set; }
         public bool IsFavourite { get; set; }
         public bool Active { get; set; } = true;
-        public List<ProductVariantDTO>? Variants { get; set; } = new();
-        public List<ProductCombinationStockDTO> Combinations { get; set; } = new();
+        [Required]
+        public List<ProductVariantCreateDTO> Variants { get; set; } = new();
+
+        public List<Guid>? CategoryIds { get; set; }
     }
 }

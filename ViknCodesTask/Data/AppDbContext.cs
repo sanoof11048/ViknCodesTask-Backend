@@ -15,23 +15,27 @@ namespace ViknCodesTask.Data
         }
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductVariant> ProductVariants { get; set; }
-        public DbSet<SubVariant> VariantOptions { get; set; }
+        public DbSet<ProductSubVariant> ProductSubVariants { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<ProductStock> ProductStocks { get; set; }
+        public DbSet<ProductCategory> ProductCategories { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<ProductVariant>()
-                .HasOne(pv => pv.Product)
-                .WithMany(p => p.Variants)
-                .HasForeignKey(pv => pv.ProductId);
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Variants)
+                    .WithOne(v => v.Product)
+                    .HasForeignKey(v => v.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<SubVariant>()
-                .HasOne(sv => sv.ProductVariant)
-                .WithMany(pv => pv.Options)
-                .HasForeignKey(sv => sv.ProductVariantId);
+            modelBuilder.Entity<ProductVariant>()
+                .HasMany(v => v.SubVariants)
+                    .WithOne(sv => sv.Variant)
+                    .HasForeignKey(sv => sv.ProductVariantId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Product>()
                .HasIndex(p => p.ProductCode)
@@ -41,13 +45,28 @@ namespace ViknCodesTask.Data
                 .HasIndex(v => new { v.ProductId, v.VariantName })
                 .IsUnique();
 
-            modelBuilder.Entity<SubVariant>()
-                .HasIndex(o => new { o.ProductVariantId, o.Value })
-                .IsUnique();
+            modelBuilder.Entity<ProductStock>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.Quantity).IsRequired();
 
-            modelBuilder.Entity<ProductStock>()
-                .HasIndex(s => new { s.ProductId, s.VariantKey })
-                .IsUnique();
+                entity.HasOne(s => s.Variant)
+                    .WithMany(v => v.ProductStock)
+                    .HasForeignKey(s => s.ProductVariantId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                modelBuilder.Entity<Product>()
+    .HasMany(p => p.ProductCategories)
+    .WithMany(pc => pc.Products)
+    .UsingEntity<Dictionary<string, object>>(
+        "ProductCategoryMappings",
+        j => j.HasOne<ProductCategory>().WithMany().HasForeignKey("CategoryId"),
+        j => j.HasOne<Product>().WithMany().HasForeignKey("ProductId"),
+        j =>
+        {
+            j.ToTable("ProductCategoryMappings");
+        });
+            });
 
         }
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
